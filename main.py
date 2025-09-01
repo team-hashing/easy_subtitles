@@ -264,7 +264,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--only_srt", action="store_true")
     parser.add_argument("--lang", type=str, default="es")
     parser.add_argument("--font", type=str, default="Arial")
-    parser.add_argument("--size", type=int, default=36)
+    parser.add_argument("--size", type=int, default=58)
     parser.add_argument("--color", type=str, default="white")
     parser.add_argument("--skip_transcribe", action="store_true")
     parser.add_argument("--max_chars", type=int, default=30)
@@ -502,14 +502,15 @@ def burn_subtitles(video_path: Path, srt_path: Path, output_path: Path, font: st
     ], check=True)
 
 def color_to_hex(color: str) -> str:
+    # .ass format uses BGR format
     colors = {
         "white": "FFFFFF",
         "black": "000000",
-        "red": "FF0000",
+        "red": "0000FF",
         "green": "00FF00",
-        "blue": "0000FF",
-        "yellow": "FFFF00",
-        "cyan": "00FFFF",
+        "blue": "FF0000",
+        "yellow": "00FFFF",
+        "cyan": "FFFF00",
         "magenta": "FF00FF"
     }
     return colors.get(color.lower(), "FFFFFF")
