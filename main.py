@@ -70,6 +70,61 @@ import sys
 from pathlib import Path
 import whisper
 
+def read_text_file(text_path: Path) -> str:
+    with open(text_path, "r", encoding="utf-8") as f:
+        return f.read().strip()
+
+def align_text_with_transcription(text_content: str, whisper_segments: list) -> list[dict[str, float | str]]:
+    import re
+    
+    text_words = re.findall(r'\b\w+\b', text_content.lower())
+    whisper_words = []
+    
+    for seg in whisper_segments:
+        if "words" in seg and seg["words"]:
+            for word_data in seg["words"]:
+                whisper_words.append({
+                    "word": word_data["word"].strip().lower(),
+                    "start": word_data["start"],
+                    "end": word_data["end"]
+                })
+    
+    aligned_segments = []
+    text_idx = 0
+    whisper_idx = 0
+    
+    while text_idx < len(text_words) and whisper_idx < len(whisper_words):
+        text_word = text_words[text_idx]
+        whisper_word = whisper_words[whisper_idx]["word"]
+        
+        if text_word == whisper_word:
+            aligned_segments.append({
+                "start": whisper_words[whisper_idx]["start"],
+                "end": whisper_words[whisper_idx]["end"],
+                "text": whisper_words[whisper_idx]["word"].strip()
+            })
+            text_idx += 1
+            whisper_idx += 1
+        elif text_word in whisper_word or whisper_word in text_word:
+            aligned_segments.append({
+                "start": whisper_words[whisper_idx]["start"],
+                "end": whisper_words[whisper_idx]["end"],
+                "text": text_words[text_idx]
+            })
+            text_idx += 1
+            whisper_idx += 1
+        else:
+            whisper_idx += 1
+            
+            if whisper_idx >= len(whisper_words):
+                break
+    
+    if not aligned_segments:
+        print("Warning: Could not align text file with audio. Using standard transcription.")
+        return whisper_segments
+    
+    return aligned_segments
+
 def read_srt(srt_path: Path) -> list[dict[str, float | str]]:
     segments = []
     
@@ -120,9 +175,21 @@ def main() -> None:
     srt_path = Path(args.srt) if args.srt else video_path.with_suffix(".srt")
     if args.input_srt:
         if not Path(args.input_srt).exists():
-            print("Error: subtitles file not found")
+            print("Error: input file not found")
             sys.exit(1)
-        segments = read_srt(Path(args.input_srt))
+        
+        file_path = Path(args.input_srt)
+        if file_path.suffix.lower() == '.srt':
+            segments = read_srt(file_path)
+        else:
+            text_content = read_text_file(file_path)
+            if not args.skip_transcribe:
+                segments = transcribe_audio(video_path, args.lang)
+                segments = align_text_with_transcription(text_content, segments)
+            else:
+                print("Error: Text file requires transcription. Remove --skip_transcribe flag.")
+                sys.exit(1)
+        
         if args.read:
             ass_path = Path(args.srt).with_suffix(".ass") if args.srt else video_path.with_suffix(".ass")
             segments = split_read_mode(segments, args.max_chars, args.max_duration, args.read_color)
@@ -173,7 +240,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("input", type=str)
     parser.add_argument("-o", "--output", type=str)
     parser.add_argument("-s", "--srt", type=str)
-    parser.add_argument("-i", "--input_srt", type=str)
+    parser.add_argument("-i", "--input_srt", type=str, help="Use existing subtitle file (.srt) or text file (.txt) as script")
     parser.add_argument("--only_srt", action="store_true")
     parser.add_argument("--lang", type=str, default="es")
     parser.add_argument("--font", type=str, default="Arial")

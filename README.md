@@ -106,7 +106,11 @@ python main.py [input_video] [OPTIONS]
 |--------|------|---------|-------------|
 | `-o, --output` | string | `{input}_subtitled.mp4` | Output video file path |
 | `-s, --srt` | string | `{input}.srt` | Subtitle file path |
-| `-i, --input_srt` | string | - | Use existing subtitle file instead of transcribing |
+| `-i, --input_srt` | string | - | Use existing subtitle file (.srt) or text file (.txt) as script |
+
+## Display Modes
+
+### 1. Standard Mode (Default)
 | `--only_srt` | flag | `False` | Generate only subtitle files, don't burn into video |
 | `--lang` | string | `es` | Language for transcription (en, es, fr, etc.) |
 | `--font` | string | `Arial` | Font family for subtitles |
@@ -183,6 +187,31 @@ python main.py video.mp4 --input_srt existing.srt --word
 # Large, red subtitles with custom font
 python main.py video.mp4 --font "Helvetica" --size 48 --color red
 ```
+
+## Text File Script Support
+
+You can use any text file as a script for your subtitles. The tool will align the text content with the spoken audio using Whisper's word-level timestamps.
+
+### How it works:
+- Provide a text file with the script content using `-i`
+- Whisper transcribes the audio with precise timing
+- The tool aligns your text with the spoken words
+- Maintains exact timing while using your script's wording
+
+### Example:
+```bash
+# Create a script file
+echo "Remember the hotel sector in Spain. The hotel chain has increased revenue." > script.txt
+
+# Generate subtitles using the script
+python main.py video.mp4 -i script.txt --read
+```
+
+### Alignment Features:
+- Handles minor differences between script and speech
+- Falls back to standard transcription if alignment fails
+- Provides warnings about alignment quality
+- Works with all display modes (--read, --word, etc.)
 
 ## Styling Options
 
