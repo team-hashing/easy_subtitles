@@ -1,20 +1,25 @@
 [project]
 name = "easy-subtitles"
 version = "0.1.0"
-description = "Add your description here"
+description = "A very opinionated tool for generating and embedding subtitles in videos."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "openai-whisper>=20250625",
 ]
 
+authors = [
+    { name = "Hashing Works", email = "teamhashing@gmail.com"},
+    { name = "Guillermo Martín-Coello Juárez", email = "guillermo.martincoello@gmail.com" },
+    { name = "Daniel Varela Sánchez", email = "dvarelasanchez@gmail.com" }
+]
+
 [tool.hatch.build.targets.wheel]
-packages = ["main"]
+include = ["main.py"]
 
 [project.scripts]
-"easysubs" = "main:main"
+easysubs = "main:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
-
