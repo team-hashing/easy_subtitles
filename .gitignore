@@ -13,3 +13,4 @@ wheels/
 *.srt
 old.py
 *.wav
+sub_file.txt

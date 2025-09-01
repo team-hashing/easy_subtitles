@@ -1,3 +1,10 @@
+import argparse
+import subprocess
+import sys
+from pathlib import Path
+import whisper
+import imageio_ffmpeg as ffmpeg
+
 def clean_color_codes(text: str) -> str:
     import re
     return re.sub(r'\{\\c&H[0-9A-Fa-f]{6}&\}|\{\\c\}', '', text).strip()
@@ -64,11 +71,7 @@ def process_chunk(chunk: list[dict[str, float | str]], new_segments: list, read_
             "end": end_time,
             "text": seg_text
         })
-import argparse
-import subprocess
-import sys
-from pathlib import Path
-import whisper
+
 
 def read_text_file(text_path: Path) -> str:
     with open(text_path, "r", encoding="utf-8") as f:
@@ -170,12 +173,27 @@ def main() -> None:
     args = parse_args()
     video_path = Path(args.input)
     if not video_path.exists():
-        print("Error: video file not found")
+        print(f"Error: Video file '{args.input}' not found")
+        print("Please ensure the video file exists or check the file path.")
         sys.exit(1)
     srt_path = Path(args.srt) if args.srt else video_path.with_suffix(".srt")
     if args.input_srt:
         if not Path(args.input_srt).exists():
-            print("Error: input file not found")
+            print(f"Error: Input file '{args.input_srt}' not found")
+            print("Please ensure the file exists or check the file path.")
+            
+            # Show available text/script files in current directory
+            current_dir = Path.cwd()
+            available_files = []
+            for file in current_dir.iterdir():
+                if file.is_file() and file.suffix.lower() in ['.txt', '.srt']:
+                    available_files.append(file.name)
+            
+            if available_files:
+                print(f"\nAvailable script/subtitle files in current directory:")
+                for file in sorted(available_files):
+                    print(f"  - {file}")
+            
             sys.exit(1)
         
         file_path = Path(args.input_srt)
@@ -198,8 +216,9 @@ def main() -> None:
                 print(f"ASS subtitles generated in: {ass_path}")
                 return
             output_path = Path(args.output) if args.output else video_path.stem + "_subtitled.mp4"
+            ffmpeg_exe = ffmpeg.get_ffmpeg_exe()
             subprocess.run([
-                "ffmpeg", "-y", "-i", str(video_path), "-vf", f"subtitles='{ass_path}'", str(output_path)
+                ffmpeg_exe, "-y", "-i", str(video_path), "-vf", f"subtitles='{ass_path}'", str(output_path)
             ], check=True)
             print(f"Video subtitulado generado en: {output_path}")
             return
@@ -218,8 +237,9 @@ def main() -> None:
                 print(f"ASS subtitles generated in: {ass_path}")
                 return
             output_path = Path(args.output) if args.output else video_path.stem + "_subtitled.mp4"
+            ffmpeg_exe = ffmpeg.get_ffmpeg_exe()
             subprocess.run([
-                "ffmpeg", "-y", "-i", str(video_path), "-vf", f"subtitles='{ass_path}'", str(output_path)
+                ffmpeg_exe, "-y", "-i", str(video_path), "-vf", f"subtitles='{ass_path}'", str(output_path)
             ], check=True)
             print(f"Video subtitulado generado en: {output_path}")
             return
@@ -240,7 +260,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("input", type=str)
     parser.add_argument("-o", "--output", type=str)
     parser.add_argument("-s", "--srt", type=str)
-    parser.add_argument("-i", "--input_srt", type=str, help="Use existing subtitle file (.srt) or text file (.txt) as script")
+    parser.add_argument("-i", "--input_srt", type=str, help="Path to subtitle file (.srt) or text script file (.txt) for alignment")
     parser.add_argument("--only_srt", action="store_true")
     parser.add_argument("--lang", type=str, default="es")
     parser.add_argument("--font", type=str, default="Arial")
@@ -256,8 +276,9 @@ def parse_args() -> argparse.Namespace:
 
 def extract_audio(video_path: Path) -> Path:
     audio_path = video_path.with_suffix(".wav")
+    ffmpeg_exe = ffmpeg.get_ffmpeg_exe()
     subprocess.run([
-        "ffmpeg", "-y", "-i", str(video_path), "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1", str(audio_path)
+        ffmpeg_exe, "-y", "-i", str(video_path), "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1", str(audio_path)
     ], check=True)
     return audio_path
 
@@ -467,8 +488,9 @@ def modify_ass_style(ass_path: Path, font: str, size: int, color: str) -> None:
 
 def burn_subtitles(video_path: Path, srt_path: Path, output_path: Path, font: str, size: int, color: str) -> None:
     ass_path = srt_path.with_suffix(".ass")
+    ffmpeg_exe = ffmpeg.get_ffmpeg_exe()
     subprocess.run([
-        "ffmpeg", "-y", "-i", str(srt_path), str(ass_path)
+        ffmpeg_exe, "-y", "-i", str(srt_path), str(ass_path)
     ], check=False)
     
     modify_ass_style(ass_path, font, size, color)
@@ -476,7 +498,7 @@ def burn_subtitles(video_path: Path, srt_path: Path, output_path: Path, font: st
     vf = f"subtitles='{ass_path}'"
     
     subprocess.run([
-        "ffmpeg", "-y", "-i", str(video_path), "-vf", vf, str(output_path)
+        ffmpeg_exe, "-y", "-i", str(video_path), "-vf", vf, str(output_path)
     ], check=True)
 
 def color_to_hex(color: str) -> str:

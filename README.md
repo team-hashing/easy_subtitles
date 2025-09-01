@@ -20,7 +20,7 @@ Easy Subtitles is a very opinionated Python tool that automatically generates an
 ### Prerequisites
 
 - **Python 3.10+**
-- **FFmpeg** (for video processing)
+- **FFmpeg** (automatically installed via imageio-ffmpeg)
 
 ### Option 1: Install with uv (Recommended)
 
@@ -51,32 +51,6 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 # OR
 pip install openai-whisper
-```
-
-### Install FFmpeg
-
-#### Linux (Ubuntu/Debian):
-```bash
-sudo apt update
-sudo apt install ffmpeg
-```
-
-#### Linux (Fedora/RHEL):
-```bash
-sudo dnf install ffmpeg
-```
-
-#### macOS:
-```bash
-brew install ffmpeg
-```
-
-#### Windows:
-Download from [FFmpeg official website](https://ffmpeg.org/download.html) or use:
-```bash
-choco install ffmpeg  # With Chocolatey
-# OR
-winget install ffmpeg  # With winget
 ```
 
 ## Usage
@@ -260,10 +234,8 @@ python main.py video.mp4 --skip_transcribe --input_srt existing.srt
 ### Common Issues
 
 #### "FFmpeg not found"
-```bash
-# Install FFmpeg (see installation section above)
-which ffmpeg  # Verify installation
-```
+- FFmpeg is automatically installed via imageio-ffmpeg
+- If you encounter issues, try reinstalling: `uv add imageio-ffmpeg` or `pip install --upgrade imageio-ffmpeg`
 
 #### "CUDA warnings"
 - Normal on CPU-only systems
